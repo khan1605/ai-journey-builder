@@ -76,6 +76,33 @@ async function callOllama(prompt) {
   return typeof call === 'string' ? JSON.parse(call) : call;
 }
 
+async function callOpenRouter(prompt) {
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!key) throw new Error('OPENROUTER_API_KEY not set.');
+  const model = process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.1-8b-instruct:free';
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${key}`
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: prompt }
+      ],
+      tools: [{ type: 'function', function: TOOL_SCHEMA }],
+      tool_choice: { type: 'function', function: { name: TOOL_NAME } }
+    })
+  });
+  if (!res.ok) throw new Error(`OpenRouter error ${res.status}`);
+  const data = await res.json();
+  const args = data?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+  if (!args) throw new Error('Model did not return a journey.');
+  return typeof args === 'string' ? JSON.parse(args) : args;
+}
+
 async function callAnthropic(prompt) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error('ANTHROPIC_API_KEY not set.');
@@ -109,7 +136,22 @@ async function callAnthropic(prompt) {
   return block.input;
 }
 
+const PROVIDERS = {
+  ollama: callOllama,
+  openrouter: callOpenRouter,
+  anthropic: callAnthropic
+};
+
+// Returns { journey, source }. Tries the configured LLM provider; on any
+// failure (no key, rate limit, bad output) falls back to the rule-based parser
+// so the endpoint never hard-fails for a visitor.
 export async function generateJourney(prompt) {
   const provider = (process.env.LLM_PROVIDER || 'ollama').toLowerCase();
-  return provider === 'anthropic' ? callAnthropic(prompt) : callOllama(prompt);
+  const fn = PROVIDERS[provider] || callOllama;
+  try {
+    const raw = await fn(prompt);
+    return { raw, source: provider };
+  } catch (err) {
+    return { raw: null, source: 'fallback', error: err.message };
+  }
 }

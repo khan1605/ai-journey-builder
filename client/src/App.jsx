@@ -26,6 +26,7 @@ export default function App() {
   const [prompt, setPrompt] = useState(SAMPLE);
   const [busy, setBusy] = useState(false);
   const [journey, setJourney] = useState(null);
+  const [source, setSource] = useState(null);
   const [saved, setSaved] = useState([]);
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
@@ -36,7 +37,9 @@ export default function App() {
   const generate = async () => {
     setBusy(true); setErr(null); setMsg(null); setJourney(null);
     try {
-      setJourney(await api.generate(prompt));
+      const { journey, source } = await api.generate(prompt);
+      setJourney(journey);
+      setSource(source);
     } catch (e) {
       setErr(e.message);
     } finally {
@@ -108,6 +111,14 @@ export default function App() {
           <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
             <Typography variant="h6">Preview</Typography>
             <Chip size="small" label={journey.stepsKey} />
+            {source && (
+              <Chip
+                size="small"
+                variant="outlined"
+                color={source === 'fallback' ? 'default' : 'success'}
+                label={source === 'fallback' ? 'rule-based' : `LLM: ${source}`}
+              />
+            )}
             <Box flex={1} />
             <Button variant="outlined" onClick={save}>Save journey</Button>
           </Stack>

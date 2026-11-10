@@ -25,9 +25,10 @@ reliability and safety, which this project treats as first-class:
   that exist in a server-side whitelist. The AI/config selects *which* action
   runs and in what order; it can **never** supply a URL or arbitrary code. This
   is what makes it safe to let a model drive data-mutating calls.
-- **Provider-pluggable LLM** — runs fully local and free with **Ollama**, or
-  switch to the **Anthropic API** with one env var. The API key stays
-  server-side, never in the browser.
+- **Provider-pluggable LLM, never fails** — runs fully local with **Ollama**,
+  free hosted models via **OpenRouter**, or **Anthropic**. If the provider is
+  unset or rate-limited, it falls back to a **rule-based parser** so the hosted
+  demo always returns a journey. Keys stay server-side, never in the browser.
 
 ## Architecture
 
@@ -52,8 +53,20 @@ npm run dev                           # server :5050 + client :5173
 
 Open http://localhost:5173.
 
-### Use the Anthropic API instead of Ollama
-In `server/.env`: set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY=...`.
+### Cloud LLM (no local Ollama)
+Set `LLM_PROVIDER=openrouter` and `OPENROUTER_API_KEY=...` (free models at
+[openrouter.ai](https://openrouter.ai), no card). Or `anthropic` + `ANTHROPIC_API_KEY`.
+
+## Deploy (one clickable URL on Vercel)
+
+The repo ships Vercel config: the React app builds to `client/dist`, and the
+Express API runs as a serverless function (`api/index.js`) behind `/api/*`.
+
+1. Push to GitHub, import the repo on [Vercel](https://vercel.com).
+2. Add env vars: `MONGO_URI` (free [Atlas](https://www.mongodb.com/atlas) cluster),
+   `LLM_PROVIDER=openrouter`, `OPENROUTER_API_KEY` (optional — without it the
+   rule-based parser is used, so the demo still works).
+3. Deploy. One URL hosts the UI + API.
 
 ## API
 
