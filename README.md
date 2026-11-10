@@ -29,6 +29,9 @@ reliability and safety, which this project treats as first-class:
   free hosted models via **OpenRouter**, or **Anthropic**. If the provider is
   unset or rate-limited, it falls back to a **rule-based parser** so the hosted
   demo always returns a journey. Keys stay server-side, never in the browser.
+- **Exposed over MCP too** — the same engine ships as a Model Context Protocol
+  server, so an AI assistant can generate, save and run journeys as tools, not
+  just a human through the web UI.
 
 ## Architecture
 
@@ -38,6 +41,39 @@ client (React + Vite + MUI)
   preview (live stepper + schema-driven form)
   save    ─▶ POST /api/journeys           (Mongo: journeys collection)
   submit  ─▶ POST /api/journeys/:type/execute ─▶ [ whitelisted executor ]
+
+mcp (Model Context Protocol server, stdio)
+  AI assistant ─▶ generate_journey / save_journey / list_journeys / run_journey
+                  (same LLM, normalizer, Mongo model and executor as the web API)
+```
+
+## MCP server
+
+The same journey engine is also exposed over the **Model Context Protocol**, so
+an AI assistant (Claude Desktop, Claude Code, …) can drive it with tools:
+
+| Tool | Does |
+|---|---|
+| `generate_journey` | prompt → normalized journey schema |
+| `save_journey` | upsert a journey into MongoDB |
+| `list_journeys` | list saved journeys |
+| `run_journey` | execute a journey's whitelisted action sequence |
+
+It reuses the web server's LLM client, normalizer, Mongoose model and executor —
+one source of truth, two front doors (HTTP and MCP).
+
+Register it with Claude Desktop (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "ai-journey-builder": {
+      "command": "node",
+      "args": ["/absolute/path/to/ai-journey-builder/mcp/src/server.js"],
+      "env": { "MONGO_URI": "mongodb+srv://...", "LLM_PROVIDER": "ollama" }
+    }
+  }
+}
 ```
 
 ## Run it
@@ -80,8 +116,8 @@ Express API runs as a serverless function (`api/index.js`) behind `/api/*`.
 
 ## Tech
 
-React 18 · Vite · MUI 6 · Node/Express · MongoDB (Mongoose) · Ollama / Anthropic
-tool-calling.
+React 18 · Vite · MUI 6 · Node/Express · MongoDB (Mongoose) · Ollama / OpenRouter /
+Anthropic tool-calling · Model Context Protocol (MCP) server.
 
 ## License
 

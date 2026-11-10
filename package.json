@@ -6,7 +6,8 @@
   "description": "Turn a plain-English prompt into a multi-step form journey. LLM generates step/field schemas; a safe whitelisted executor runs the configured actions.",
   "workspaces": [
     "server",
-    "client"
+    "client",
+    "mcp"
   ],
   "scripts": {
     "dev": "concurrently -n server,client -c blue,green \"npm:dev:server\" \"npm:dev:client\"",

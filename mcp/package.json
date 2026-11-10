@@ -1,0 +1,15 @@
+{
+  "name": "ajb-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "bin": { "ajb-mcp": "src/server.js" },
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "dotenv": "^16.4.5",
+    "mongoose": "^8.8.0"
+  }
+}
