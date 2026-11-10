@@ -27,6 +27,7 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [journey, setJourney] = useState(null);
   const [source, setSource] = useState(null);
+  const [showJson, setShowJson] = useState(false);
   const [saved, setSaved] = useState([]);
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
@@ -115,14 +116,42 @@ export default function App() {
               <Chip
                 size="small"
                 variant="outlined"
-                color={source === 'fallback' ? 'default' : 'success'}
-                label={source === 'fallback' ? 'rule-based' : `LLM: ${source}`}
+                color={source === 'fallback' || source === 'saved' ? 'default' : 'success'}
+                label={
+                  source === 'saved'
+                    ? 'saved'
+                    : source === 'fallback'
+                    ? 'rule-based'
+                    : `LLM: ${source}`
+                }
               />
             )}
             <Box flex={1} />
+            <Button size="small" onClick={() => setShowJson((v) => !v)}>
+              {showJson ? 'Hide schema JSON' : 'View schema JSON'}
+            </Button>
             <Button variant="outlined" onClick={save}>Save journey</Button>
           </Stack>
-          <JourneyPreview journey={journey} onExecute={execute} />
+          {showJson && (
+            <Box
+              component="pre"
+              sx={{
+                mb: 2, p: 2, borderRadius: 1, overflow: 'auto', maxHeight: 320,
+                bgcolor: 'grey.900', color: 'grey.100', fontSize: 12
+              }}
+            >
+              {JSON.stringify(
+                { stepsKey: journey.stepsKey, steps: journey.steps },
+                null,
+                2
+              )}
+            </Box>
+          )}
+          <JourneyPreview
+            key={journey.stepsKey + (journey._id || '')}
+            journey={journey}
+            onExecute={execute}
+          />
         </Box>
       )}
 
@@ -138,7 +167,18 @@ export default function App() {
                 <Chip size="small" color="primary" label={s.journeyType} />
                 <Typography>{s.steps?.length || 0} steps</Typography>
                 <Box flex={1} />
-                <Button size="small" onClick={() => setJourney(s)}>Open</Button>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setJourney(s);
+                    setSource('saved');
+                    setMsg(null);
+                    setErr(null);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                >
+                  Open
+                </Button>
               </Stack>
             </Paper>
           ))}
